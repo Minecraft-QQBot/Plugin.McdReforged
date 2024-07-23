@@ -11,7 +11,7 @@ event_sender: EventSender = None
 
 def on_load(server: PluginServerInterface, old):
     def qq(source: CommandSource, content: CommandContext):
-        if config.sync_all_messages:
+        if config.flag:
             source.reply('§7已启用 同步所有消息 功能！此指令已自动禁用。§7')
             return None
         player = 'Console' if source.is_console else source.player
@@ -45,7 +45,8 @@ def on_server_startup(server: PluginServerInterface):
 
 
 def on_user_info(server: PluginServerInterface, info: Info):
-    event_sender.send_player_info(info.player, info.content)
+    if info.is_player:
+        event_sender.send_player_info(info.player, info.content)
 
 
 def on_player_left(server: PluginServerInterface, player: str):

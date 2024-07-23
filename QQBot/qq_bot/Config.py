@@ -9,4 +9,4 @@ class Config(Serializable):
     # 和机器人服务器的 token 一致
     token: str = 'YourToken'
     # 无需管，同 .env 里的 SYNC_ALL_GAME_MESSAGE
-    sync_all_messages: bool = False
+    flag: bool = False
