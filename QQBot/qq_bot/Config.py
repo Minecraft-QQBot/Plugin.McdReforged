@@ -8,5 +8,7 @@ class Config(Serializable):
     name: str = 'name'
     # 和机器人服务器的 token 一致
     token: str = 'YourToken'
+    # 尝试重连间隔(s)
+    reconnect_interval: int = 5
     # 无需管，同 .env 里的 SYNC_ALL_GAME_MESSAGE
     flag: bool = False

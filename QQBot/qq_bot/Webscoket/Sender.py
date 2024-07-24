@@ -1,4 +1,4 @@
-from .Config import Config
+from ..Config import Config
 
 from mcdreforged.api.all import PluginServerInterface
 
@@ -7,12 +7,12 @@ from json import dumps, loads
 from websocket import WebSocketConnectionClosedException, WebSocket
 
 
-class EventSender:
+class WebsocketSender:
     config: Config = None
     server: PluginServerInterface = None
 
     websocket: WebSocket = None
-    websocket_uri: str = 'ws://127.0.0.1:{}/minecraft/websocket'
+    websocket_uri: str = 'ws://127.0.0.1:{}/websocket/bot'
 
     def __init__(self, server: PluginServerInterface, config: Config):
         self.server = server
@@ -31,20 +31,23 @@ class EventSender:
                 self.server.logger.info('身份验证完毕，连接到 WebSocket 服务器成功！')
                 return True
             if retry_count >= 3:
+                self.websocket = None
                 return False
             return self.connect(retry_count + 1)
-        except (WebSocketConnectionClosedException, ConnectionRefusedError):
+        except (WebSocketConnectionClosedException, ConnectionError):
+            self.websocket = None
             self.server.logger.error('连接到机器人失败！请检查配置或查看是否启动机器人或配置文件是否正确，然后重试。')
         return False
 
     def send_data(self, type: str, data: dict = {}, retry: bool = True):
-        data = {'action': type, 'data': data}
+        data = {'type': type, 'data': data}
         if self.websocket is None:
             if not self.connect(): return None
         try:
             self.websocket.send(dumps(data))
             response = loads(self.websocket.recv())
-        except (WebSocketConnectionClosedException, ConnectionResetError):
+        except (WebSocketConnectionClosedException, ConnectionError):
+            self.websocket = None
             self.server.logger.warn('与 WebSocket 服务器的连接已断开！')
             if self.connect() and retry:
                 return self.send_data(type, data, retry=False)
@@ -60,10 +63,10 @@ class EventSender:
             return None
         self.server.logger.error('发送服务器信息失败！请检查配置或查看是否启动服务端，然后重试。')
 
-    def send_message(self, message: str):
+    def send_synchronous_message(self, message: str):
         data = {'message': message}
         self.server.logger.info(F'向 QQ 群发送消息 {message}')
-        return self.send_data('send_message', data)
+        return self.send_data('message', data)
 
     def send_startup(self):
         if rcon_info := self.read_rcon_info():
