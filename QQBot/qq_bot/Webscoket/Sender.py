@@ -19,7 +19,8 @@ class WebsocketSender:
         self.server = server
         self.config = config
         self.websocket_uri = self.websocket_uri.format(config.port)
-        self.connect()
+        thread = Thread(name='KeepConnectionThread', target=self.keep_connection, daemon=True)
+        thread.start()
 
     def close(self, * args):
         if self.websocket:
