@@ -111,7 +111,7 @@ class WebsocketSender:
 
     def keep_connection(self):
         while True:
-            time.sleep(30)
+            time.sleep(60)
             if self.websocket:
                 try:
                     self.websocket.send('Ok')

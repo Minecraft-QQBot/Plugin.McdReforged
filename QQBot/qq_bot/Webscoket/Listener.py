@@ -65,7 +65,7 @@ class WebsocketListener(Thread):
             self.websocket.connect(self.websocket_uri, header=headers)
             self.server.logger.info('身份验证完毕，连接到机器人成功！')
             self.websocket.send('Ok')
-            return False
+            return True
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
             self.server.logger.error('尝试连接到机器人失败！请检查配置或查看是否启动机器人或配置文件是否正确。')
