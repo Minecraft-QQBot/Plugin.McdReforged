@@ -7,6 +7,7 @@ from mcdreforged.api.all import PluginServerInterface, CommandContext, CommandSo
 
 config: Config = None
 sender: WebsocketSender = None
+listener: WebsocketListener = None
 
 
 def on_load(server: PluginServerInterface, old):
@@ -18,7 +19,7 @@ def on_load(server: PluginServerInterface, old):
         success = sender.send_synchronous_message(F'[{config.name}] <{player}> {content.get("message")}')
         source.reply('§a发送消息成功！§a' if success else '§c发送消息失败！§c')
 
-    global sender, config
+    global listener, sender, config
     config = server.load_config_simple(target_class=Config)
     server.register_help_message('qq', '发送消息到 QQ 群')
     server.logger.info('正在注册指令……')
@@ -26,9 +27,17 @@ def on_load(server: PluginServerInterface, old):
     command_builder.command('!!qq <message>', qq)
     command_builder.arg('message', GreedyText)
     command_builder.register(server)
-    sender = WebsocketSender(server, config)
     listener = WebsocketListener(server, config)
     listener.start()
+    sender = WebsocketSender(server, config)
+    server.register_event_listener('qq_bot.websocket_closed', sender.close)
+    server.register_event_listener('qq_bot.websocket_connected', sender.connect)
+
+
+def on_unload(server: PluginServerInterface):
+    server.logger.info('检测到插件卸载，已断开与机器人的连接！')
+    sender.close()
+    listener.close()
 
 
 def on_info(server: PluginServerInterface, info: Info):

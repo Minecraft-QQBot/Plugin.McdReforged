@@ -1,6 +1,7 @@
 from ..Config import Config
 
-from mcdreforged.api.all import PluginServerInterface
+from mcdreforged.api.event import LiteralEvent
+from mcdreforged.api.types import PluginServerInterface
 
 from time import sleep
 from threading import Thread
@@ -26,6 +27,8 @@ class WebsocketListener(Thread):
         while True:
             sleep(self.config.reconnect_interval)
             if self.connect():
+                self.server.logger.info('与机器人的连接已建立！已通知插件。')
+                self.server.dispatch_event(LiteralEvent('qq_bot.websocket_connected'), (None, None))
                 try:
                     while True:
                         response = None
@@ -48,6 +51,11 @@ class WebsocketListener(Thread):
                         self.websocket.send(dumps({'success': False}))
                 except (WebSocketConnectionClosedException, ConnectionError):
                     self.server.logger.warning('与机器人的连接已断开！')
+                    self.server.dispatch_event(LiteralEvent('qq_bot.websocket_closed'), (None, None))
+
+    def close(self):
+        if self.websocket:
+            self.websocket.close()
 
     def connect(self):
         self.server.logger.info('正在尝试连接到机器人……')
@@ -60,6 +68,7 @@ class WebsocketListener(Thread):
                 self.server.logger.info('身份验证完毕，连接到机器人成功！')
                 self.websocket.send('Ok')
                 return True
+            self.server.logger.error('身份验证失败！请检查配置或查看是否启动机器人或配置文件是否正确。')
             self.websocket = None
             return False
         except (WebSocketConnectionClosedException, ConnectionError):

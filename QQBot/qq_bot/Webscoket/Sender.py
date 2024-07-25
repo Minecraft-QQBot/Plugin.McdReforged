@@ -20,8 +20,12 @@ class WebsocketSender:
         self.websocket_uri = self.websocket_uri.format(config.port)
         self.connect()
 
-    def connect(self, retry_count=0):
-        self.server.logger.info('正在尝试连接到 WebSocket 服务器……')
+    def close(self, server: PluginServerInterface = None, * args):
+        if self.websocket:
+            self.websocket.close()
+
+    def connect(self, server: PluginServerInterface = None, * args):
+        self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
             self.websocket.connect(self.websocket_uri)
@@ -30,35 +34,36 @@ class WebsocketSender:
             if response.get('success'):
                 self.server.logger.info('身份验证完毕，连接到 WebSocket 服务器成功！')
                 return True
-            if retry_count >= 3:
-                self.websocket = None
-                return False
-            return self.connect(retry_count + 1)
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
             self.server.logger.error('连接到机器人失败！请检查配置或查看是否启动机器人或配置文件是否正确，然后重试。')
         return False
 
     def send_data(self, type: str, data: dict = {}, retry: bool = True):
-        data = {'type': type, 'data': data}
-        if self.websocket is None:
-            if not self.connect(): return None
+        if retry: data = {'type': type, 'data': data}
+        if not self.websocket:
+            if not self.connect():
+                self.server.logger.warn('与机器人服务器的链接已断开，无法发送数据！')
+                return None
+            self.server.logger.info('检测到链接关闭，已重新连接到机器人！')
         try:
             self.websocket.send(dumps(data))
             response = loads(self.websocket.recv())
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
-            self.server.logger.warn('与 WebSocket 服务器的连接已断开！')
-            if self.connect() and retry:
-                return self.send_data(type, data, retry=False)
+            self.server.logger.warn('与机器人的连接已断开！正在尝试重连')
+            for _ in range(3):
+                if self.connect() and retry:
+                    return self.send_data(type, data, retry=False)
             return None
+        self.server.logger.debug(F'来自机器人的回应 {response}！')
         if response.get('success'):
-            return response.get('data', True)
+            return response if (response := response.get('data', True)) else True
         self.server.logger.warn(F'向 WebSocket 服务器发送 {type} 事件失败！请检查机器人。')
 
-    def send_info(self):
+    def send_pid(self):
         pid = self.server.get_server_pid_all()[-1]
-        if self.send_data('server_info', {'pid': pid}):
+        if self.send_data('server_pid', {'pid': pid}):
             self.server.logger.info('发送服务器信息成功！')
             return None
         self.server.logger.error('发送服务器信息失败！请检查配置或查看是否启动服务端，然后重试。')
