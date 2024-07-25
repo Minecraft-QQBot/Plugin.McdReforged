@@ -1,9 +1,10 @@
 from ..Config import Config
 
-from mcdreforged.api.all import PluginServerInterface
+from mcdreforged.api.types import PluginServerInterface
 
-from pathlib import Path
+import time
 from json import dumps, loads
+from threading import Thread
 from websocket import WebSocketConnectionClosedException, WebSocket
 
 
@@ -20,20 +21,17 @@ class WebsocketSender:
         self.websocket_uri = self.websocket_uri.format(config.port)
         self.connect()
 
-    def close(self, server: PluginServerInterface = None, * args):
+    def close(self, * args):
         if self.websocket:
             self.websocket.close()
 
-    def connect(self, server: PluginServerInterface = None, * args):
+    def connect(self, * args):
         self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
-            self.websocket.connect(self.websocket_uri)
-            self.websocket.send(dumps({'token': self.config.token, 'name': self.config.name}))
-            response = loads(self.websocket.recv())
-            if response.get('success'):
-                self.server.logger.info('身份验证完毕，连接到 WebSocket 服务器成功！')
-                return True
+            headers = [F'token: {self.config.token}', F'name: {self.config.name}']
+            self.websocket.connect(self.websocket_uri, header=headers)
+            self.server.logger.info('身份验证完毕，连接到机器人成功！')
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
             self.server.logger.error('连接到机器人失败！请检查配置或查看是否启动机器人或配置文件是否正确，然后重试。')
@@ -48,7 +46,9 @@ class WebsocketSender:
             self.server.logger.info('检测到链接关闭，已重新连接到机器人！')
         try:
             self.websocket.send(dumps(data))
-            response = loads(self.websocket.recv())
+            message = self.websocket.recv()
+            self.server.logger.info(F'收到来自机器人的消息 {message}')
+            response = loads(message)
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
             self.server.logger.warn('与机器人的连接已断开！正在尝试重连')
@@ -74,15 +74,14 @@ class WebsocketSender:
         return self.send_data('message', data)
 
     def send_startup(self):
-        if rcon_info := self.read_rcon_info():
-            pid = self.server.get_server_pid_all()[-1]
-            if response := self.send_data('server_startup', {'rcon': rcon_info, 'pid': pid}):
-                self.server.logger.info('发送服务器启动消息成功！')
-                self.config.flag = response.get('flag', False)
-                self.server.logger.info(F'保存同步的配置 {self.config}')
-                self.server.save_config_simple(self.config)
-                return None
-            self.server.logger.error('发送服务器启动消息失败！请检查配置或查看是否启动服务端，然后重试。')
+        pid = self.server.get_server_pid_all()[-1]
+        if response := self.send_data('server_startup', {'pid': pid}):
+            self.server.logger.info('发送服务器启动消息成功！')
+            self.config.flag = response.get('flag', False)
+            self.server.logger.info(F'保存同步的配置 {self.config}')
+            self.server.save_config_simple(self.config)
+            return None
+        self.server.logger.error('发送服务器启动消息失败！请检查配置或查看是否启动服务端，然后重试。')
 
     def send_shutdown(self):
         if self.send_data('server_shutdown'):
@@ -109,24 +108,13 @@ class WebsocketSender:
             return None
         self.server.logger.error(F'发送玩家 {player} 加入消息失败！请检查配置或查看是否启动服务端，然后重试。')
 
-    def read_rcon_info(self):
-        password, port = None, None
-        server_config = Path('./server/server.properties')
-        if not server_config.exists():
-            self.server.logger.error('服务器配置文件不存在！请联系管理员求助。')
-            return None
-        with server_config.open('r', encoding='utf-8') as file:
-            for line in file.readlines():
-                if (not line) or line.startswith('#'):
-                    continue
-                if len(line := line.strip().split('=')) == 2:
-                    key, value = line
-                    if key == 'enable-rcon' and value == 'false':
-                        self.server.logger.error('服务器没有开启 Rcon ！请开启 Rcon 后重试。')
-                        return None
-                    port = (int(value) if key == 'rcon.port' else port)
-                    password = (value if key == 'rcon.password' else password)
-        if not (password and port):
-            self.server.logger.error('服务器配置文件中没有找到 Rcon 信息！请检查服务器配置文件后重试。')
-            return None
-        return password, port
+    def keep_connection(self):
+        while True:
+            time.sleep(30)
+            if self.websocket:
+                try:
+                    self.websocket.send('Ok')
+                    self.websocket.recv()
+                except (WebSocketConnectionClosedException, ConnectionError):
+                    self.websocket = None
+                    self.server.logger.warn('与机器人的连接已断开！')

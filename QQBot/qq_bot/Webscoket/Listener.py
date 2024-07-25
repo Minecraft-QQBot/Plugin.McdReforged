@@ -33,7 +33,7 @@ class WebsocketListener(Thread):
                     while True:
                         response = None
                         message = self.websocket.recv()
-                        self.server.logger.debug(F'收到来自机器人的消息 {message}')
+                        self.server.logger.info(F'收到来自机器人的消息 {message}')
                         data = loads(message)
                         type = data.get('type')
                         data = data.get('data')
@@ -61,15 +61,10 @@ class WebsocketListener(Thread):
         self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
-            self.websocket.connect(self.websocket_uri)
-            self.websocket.send(dumps({'token': self.config.token, 'name': self.config.name}))
-            response = loads(self.websocket.recv())
-            if response.get('success'):
-                self.server.logger.info('身份验证完毕，连接到机器人成功！')
-                self.websocket.send('Ok')
-                return True
-            self.server.logger.error('身份验证失败！请检查配置或查看是否启动机器人或配置文件是否正确。')
-            self.websocket = None
+            headers = [F'token: {self.config.token}', F'name: {self.config.name}']
+            self.websocket.connect(self.websocket_uri, header=headers)
+            self.server.logger.info('身份验证完毕，连接到机器人成功！')
+            self.websocket.send('Ok')
             return False
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None

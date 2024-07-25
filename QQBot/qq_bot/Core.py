@@ -2,7 +2,7 @@ from .Config import Config
 from .Webscoket import WebsocketListener, WebsocketSender
 
 from mcdreforged.api.command import SimpleCommandBuilder, GreedyText
-from mcdreforged.api.all import PluginServerInterface, CommandContext, CommandSource, Info
+from mcdreforged.api.all import PluginServerInterface, PlayerCommandSource, CommandContext, Info
 
 
 config: Config = None
@@ -11,11 +11,11 @@ listener: WebsocketListener = None
 
 
 def on_load(server: PluginServerInterface, old):
-    def qq(source: CommandSource, content: CommandContext):
+    def qq(source: PlayerCommandSource, content: CommandContext):
         if config.flag:
             source.reply('§7已启用 同步所有消息 功能！此指令已自动禁用。§7')
             return None
-        player = 'Console' if source.is_console else source.player
+        player = source.player if source.is_player else 'Console'
         success = sender.send_synchronous_message(F'[{config.name}] <{player}> {content.get("message")}')
         source.reply('§a发送消息成功！§a' if success else '§c发送消息失败！§c')
 
@@ -38,11 +38,6 @@ def on_unload(server: PluginServerInterface):
     server.logger.info('检测到插件卸载，已断开与机器人的连接！')
     sender.close()
     listener.close()
-
-
-def on_info(server: PluginServerInterface, info: Info):
-    if not info.is_player and '[Rcon] BotServer was connected to the server!' in info.content:
-        sender.send_info()
 
 
 def on_server_stop(server: PluginServerInterface, old):
