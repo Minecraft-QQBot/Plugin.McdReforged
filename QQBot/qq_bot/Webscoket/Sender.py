@@ -114,8 +114,7 @@ class WebsocketSender:
             time.sleep(60)
             if self.websocket:
                 try:
-                    self.websocket.send('Ok')
-                    self.websocket.recv()
+                    self.websocket.ping()
                 except (WebSocketConnectionClosedException, ConnectionError):
                     self.websocket = None
                     self.server.logger.warn('与机器人的连接已断开！')
