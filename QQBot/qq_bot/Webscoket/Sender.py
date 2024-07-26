@@ -30,9 +30,10 @@ class WebsocketSender:
         self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
-            headers = [F'token: {self.config.token}', F'name: {self.config.name}']
+            headers = [F'info: {dumps({"token": self.config.token, "name": self.config.name})}']
             self.websocket.connect(self.websocket_uri, header=headers)
             self.server.logger.info('身份验证完毕，连接到机器人成功！')
+            return True
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
             self.server.logger.error('连接到机器人失败！请检查配置或查看是否启动机器人或配置文件是否正确，然后重试。')
@@ -111,7 +112,7 @@ class WebsocketSender:
 
     def keep_connection(self):
         while True:
-            time.sleep(60)
+            time.sleep(30)
             if self.websocket:
                 try:
                     self.websocket.ping()
