@@ -1,9 +1,8 @@
+from mcdreforged.api.all import PluginServerInterface, PlayerCommandSource, CommandContext, Info
+from mcdreforged.api.command import SimpleCommandBuilder, GreedyText
+
 from .Config import Config
 from .Webscoket import WebsocketListener, WebsocketSender
-
-from mcdreforged.api.command import SimpleCommandBuilder, GreedyText
-from mcdreforged.api.all import PluginServerInterface, PlayerCommandSource, CommandContext, Info
-
 
 config: Config = None
 sender: WebsocketSender = None

@@ -1,13 +1,13 @@
-from ..Config import Config
-from ..Utils import decode, encode
+import time
+from json import JSONDecodeError, dumps, loads
+from threading import Thread
 
 from mcdreforged.api.event import LiteralEvent
 from mcdreforged.api.types import PluginServerInterface
-
-import time
-from threading import Thread
-from json import JSONDecodeError, dumps, loads
 from websocket import WebSocketConnectionClosedException, WebSocket
+
+from ..Config import Config
+from ..Utils import decode, encode
 
 
 class WebsocketListener(Thread):
