@@ -12,11 +12,11 @@ listener: WebsocketListener = None
 def on_load(server: PluginServerInterface, old):
     def qq(source: PlayerCommandSource, content: CommandContext):
         if config.flag:
-            source.reply('§7已启用 同步所有消息 功能！此指令已自动禁用。§7')
+            source.reply('§7已启用 同步所有消息 功能！此指令已自动禁用。')
             return None
         player = source.player if source.is_player else 'Console'
         success = sender.send_synchronous_message(F'[{config.name}] <{player}> {content.get("message")}')
-        source.reply('§a发送消息成功！§a' if success else '§c发送消息失败！§c')
+        source.reply('§a发送消息成功！' if success else '§c发送消息失败！')
 
     global listener, sender, config
     config = server.load_config_simple(target_class=Config)
@@ -31,6 +31,8 @@ def on_load(server: PluginServerInterface, old):
     sender = WebsocketSender(server, config)
     server.register_event_listener('qq_bot.websocket_closed', sender.close)
     server.register_event_listener('qq_bot.websocket_connected', sender.connect)
+    if not server.is_rcon_running():
+        server.logger.info('检测到没有连接 Rcon！请前去开启否则可能无法正常使用机器人。')
 
 
 def on_unload(server: PluginServerInterface):
