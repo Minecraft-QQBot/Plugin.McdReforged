@@ -1,4 +1,5 @@
 from ..Config import Config
+from ..Utils import decode, encode
 
 from mcdreforged.api.types import PluginServerInterface
 
@@ -30,7 +31,7 @@ class WebsocketSender:
         self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
-            headers = [F'info: {dumps({"token": self.config.token, "name": self.config.name})}']
+            headers = [F'info: {decode(dumps({"token": self.config.token, "name": self.config.name}))}']
             self.websocket.connect(self.websocket_uri, header=headers)
             self.server.logger.info('身份验证完毕，连接到机器人成功！')
             return True
@@ -43,17 +44,17 @@ class WebsocketSender:
         if retry: data = {'type': type, 'data': data}
         if not self.websocket:
             if not self.connect():
-                self.server.logger.warn('与机器人服务器的链接已断开，无法发送数据！')
+                self.server.logger.warning('与机器人服务器的链接已断开，无法发送数据！')
                 return None
             self.server.logger.info('检测到链接关闭，已重新连接到机器人！')
         try:
-            self.websocket.send(dumps(data))
-            message = self.websocket.recv()
+            self.websocket.send(decode(dumps(data)))
+            message = encode(self.websocket.recv())
             self.server.logger.info(F'收到来自机器人的消息 {message}')
             response = loads(message)
         except (WebSocketConnectionClosedException, ConnectionError):
             self.websocket = None
-            self.server.logger.warn('与机器人的连接已断开！正在尝试重连')
+            self.server.logger.warning('与机器人的连接已断开！正在尝试重连')
             for _ in range(3):
                 if self.connect() and retry:
                     return self.send_data(type, data, retry=False)

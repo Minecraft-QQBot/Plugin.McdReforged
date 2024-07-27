@@ -1,4 +1,5 @@
 from ..Config import Config
+from ..Utils import decode, encode
 
 from mcdreforged.api.event import LiteralEvent
 from mcdreforged.api.types import PluginServerInterface
@@ -31,23 +32,23 @@ class WebsocketListener(Thread):
                 try:
                     while True:
                         response = None
-                        message = self.websocket.recv()
+                        message = encode(self.websocket.recv())
                         self.server.logger.info(F'收到来自机器人的消息 {message}')
                         data = loads(message)
-                        type = data.get('type')
+                        evnet_type = data.get('type')
                         data = data.get('data')
-                        if type == 'command':
+                        if evnet_type == 'command':
                             response = self.command(data)
-                        elif type == 'message':
+                        elif evnet_type == 'message':
                             pass
-                        elif type == 'player_list':
+                        elif evnet_type == 'player_list':
                             pass
                         if response:
                             self.server.logger.debug(F'向机器人发送消息 {response}')
-                            self.websocket.send(dumps({'success': True, 'data': response}))
+                            self.websocket.send(decode(dumps({'success': True, 'data': response})))
                             continue
                         self.server.logger.warning(F'无法解析的消息 {message}')
-                        self.websocket.send(dumps({'success': False}))
+                        self.websocket.send(decode(dumps({'success': False})))
                 except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
                     self.server.logger.warning('与机器人的连接已断开！')
                     self.server.dispatch_event(LiteralEvent('qq_bot.websocket_closed'), (None, None))
@@ -61,7 +62,7 @@ class WebsocketListener(Thread):
         self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
-            headers = [F'info: {dumps({"token": self.config.token, "name": self.config.name})}']
+            headers = [F'info: {decode(dumps({"token": self.config.token, "name": self.config.name}))}']
             self.websocket.connect(self.websocket_uri, header=headers)
             self.server.logger.info('身份验证完毕，连接到机器人成功！')
             self.websocket.send('Ok')

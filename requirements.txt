@@ -1,1 +1,2 @@
-websocket-clinet>=1.8.0
+mcdreforged~=2.12.3
+websocket-client~=1.8.0
