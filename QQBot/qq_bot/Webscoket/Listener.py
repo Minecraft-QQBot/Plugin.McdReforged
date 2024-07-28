@@ -26,7 +26,6 @@ class WebsocketListener(Thread):
     def close(self):
         if self.websocket:
             self.websocket.close()
-        exit()
 
     def connect(self):
         self.server.logger.info('正在尝试连接到机器人……')
@@ -64,7 +63,7 @@ class WebsocketListener(Thread):
                         elif event_type == 'message':
                             pass
                         elif event_type == 'player_list':
-                            self.player_list(data)
+                            response = self.player_list(data)
                         if response is not None:
                             self.server.logger.debug(F'向机器人发送消息 {response}')
                             self.websocket.send(encode(dumps({'success': True, 'data': response})))
@@ -90,6 +89,7 @@ class WebsocketListener(Thread):
 
     def player_list(self, data: dict):
         if not self.server.is_rcon_running():
+            self.server.logger.warning('Rcon 未连接，无法获取玩家列表。')
             return None
         players = self.server.rcon_query('list')
         players = players.replace(' ', '')
