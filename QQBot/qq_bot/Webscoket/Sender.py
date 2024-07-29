@@ -56,8 +56,7 @@ class WebsocketSender(Websocket):
         return self.send_data('message', data)
 
     def send_startup(self):
-        pid = self.server.get_server_pid_all()[-1]
-        if response := self.send_data('server_startup', {'pid': pid}):
+        if response := self.send_data('server_startup'):
             self.server.logger.info('发送服务器启动消息成功！')
             self.config.flag = response.get('flag', False)
             self.server.logger.info(F'保存同步的配置 {self.config}')
@@ -71,9 +70,9 @@ class WebsocketSender(Websocket):
             return None
         self.server.logger.error('发送服务器关闭消息失败！请检查配置或查看是否启动服务端，然后重试。')
 
-    def send_player_info(self, player: str, message: str):
+    def send_player_chat(self, player: str, message: str):
         data = {'player': player, 'message': message}
-        if self.send_data('player_info', data):
+        if self.send_data('player_chat', data):
             self.server.logger.info(F'发送玩家 {player} 消息 {message} 成功！')
             return None
         self.server.logger.error(F'发送玩家 {player} 消息 {message} 失败！请检查配置或查看是否启动服务端，然后重试。')

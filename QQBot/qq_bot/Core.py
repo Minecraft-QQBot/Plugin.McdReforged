@@ -53,7 +53,7 @@ def on_server_startup(server: PluginServerInterface):
 
 def on_user_info(server: PluginServerInterface, info: Info):
     if info.is_player:
-        sender.send_player_info(info.player, info.content)
+        sender.send_player_chat(info.player, info.content)
 
 
 def on_player_left(server: PluginServerInterface, player: str):
