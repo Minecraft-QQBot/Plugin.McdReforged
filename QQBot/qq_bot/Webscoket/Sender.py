@@ -1,41 +1,23 @@
+import time
 from json import dumps, loads
 
 from mcdreforged.api.types import PluginServerInterface
 from websocket import WebSocketConnectionClosedException, WebSocket
 
+from .Base import Websocket
 from ..Config import Config
 from ..Utils import decode, encode
 
 
-class WebsocketSender:
-    config: Config = None
-    server: PluginServerInterface = None
-
-    websocket: WebSocket = None
-    websocket_uri: str = 'ws://127.0.0.1:{}/websocket/bot'
-
+class WebsocketSender(Websocket):
     def __init__(self, server: PluginServerInterface, config: Config):
-        self.server = server
-        self.config = config
-        self.websocket_uri = self.websocket_uri.format(config.port)
+        Websocket.__init__(self, server, config, 'WebsocketKeeper')
+        self.websocket_uri = self.websocket_uri.format('bot')
 
-    def close(self, * args):
-        if self.websocket:
-            self.websocket.close()
-
-    def connect(self, * args):
-        self.server.logger.info('正在尝试连接到机器人……')
-        try:
-            self.websocket = WebSocket()
-            headers = {"token": self.config.token, "name": self.config.name}
-            headers = [F'info: {encode(dumps(headers))}']
-            self.websocket.connect(self.websocket_uri, header=headers)
-            self.server.logger.info('身份验证完毕，连接到机器人成功！')
-            return True
-        except (WebSocketConnectionClosedException, ConnectionError):
-            self.websocket = None
-            self.server.logger.error('连接到机器人失败！请检查配置或查看是否启动机器人或配置文件是否正确，然后重试。')
-        return False
+    def handle_loop(self):
+        time.sleep(10)
+        if self.websocket is not None:
+            self.websocket.ping()
 
     def send_data(self, event_type: str, data: dict = {}, retry: bool = True):
         if retry: data = {'type': event_type, 'data': data}
