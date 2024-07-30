@@ -1,6 +1,6 @@
 import binascii
-from json import dumps, loads
 from base64 import b64encode, b64decode
+from json import dumps, loads
 
 
 def encode(data: dict):

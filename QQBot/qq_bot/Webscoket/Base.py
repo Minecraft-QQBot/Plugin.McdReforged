@@ -1,6 +1,4 @@
 from threading import Thread
-from json import dumps
-from threading import Thread
 
 from mcdreforged.api.types import PluginServerInterface
 from websocket import WebSocketConnectionClosedException, WebSocket

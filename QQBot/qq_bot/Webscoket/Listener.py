@@ -1,5 +1,5 @@
 import time
-from json import JSONDecodeError, dumps, loads
+from json import JSONDecodeError
 
 from mcdreforged.api.event import LiteralEvent
 from mcdreforged.api.types import PluginServerInterface

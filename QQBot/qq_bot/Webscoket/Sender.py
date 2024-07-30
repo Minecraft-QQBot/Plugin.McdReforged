@@ -1,8 +1,7 @@
 import time
-from json import dumps, loads
 
 from mcdreforged.api.types import PluginServerInterface
-from websocket import WebSocketConnectionClosedException, WebSocket
+from websocket import WebSocketConnectionClosedException
 
 from .Base import Websocket
 from ..Config import Config
