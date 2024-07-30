@@ -22,9 +22,8 @@ class WebsocketListener(Websocket):
             try:
                 while True:
                     response = None
-                    message = decode(self.websocket.recv())
-                    self.server.logger.info(F'收到来自机器人的消息 {message}')
-                    data = loads(message)
+                    data = decode(self.websocket.recv())
+                    self.server.logger.info(F'收到来自机器人的消息 {data}')
                     event_type = data.get('type')
                     data = data.get('data')
                     if event_type == 'command':
@@ -37,26 +36,24 @@ class WebsocketListener(Websocket):
                         response = self.player_list(data)
                     if response is not None:
                         self.server.logger.debug(F'向机器人发送消息 {response}')
-                        self.websocket.send(encode(dumps({'success': True, 'data': response})))
+                        self.websocket.send(encode({'success': True, 'data': response}))
                         continue
-                    self.server.logger.warning(F'无法解析的消息 {message}')
-                    self.websocket.send(encode(dumps({'success': False})))
+                    self.server.logger.warning(F'无法解析的消息 {data}')
+                    self.websocket.send(encode({'success': False}))
             except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
                 self.server.logger.warning('与机器人的连接已断开！')
                 self.server.dispatch_event(LiteralEvent('qq_bot.websocket_closed'), (None, None))
         time.sleep(self.config.reconnect_interval)
 
-    def command(self, data: dict):
-        if command := data.get('command'):
-            if self.server.is_rcon_running():
-                return {'response': self.server.rcon_query(command)}
-            self.server.execute(command)
-            return {'response': '命令已发送，但由于 Rcon 未连接无返回值。'}
+    def command(self, command: str):
+        if self.server.is_rcon_running():
+            return {'response': self.server.rcon_query(command)}
+        self.server.execute(command)
+        return {'response': '命令已发送，但由于 Rcon 未连接无返回值。'}
 
-    def mcdr_command(self, data: dict):
-        if command := data.get('command'):
-            self.server.execute_command(command)
-            return {}
+    def mcdr_command(self, command: str):
+        self.server.execute_command(command)
+        return {}
 
     def player_list(self, data: dict):
         if not self.server.is_rcon_running():

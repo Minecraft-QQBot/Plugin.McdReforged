@@ -24,17 +24,17 @@ class Websocket(Thread):
         self.config = config
         self.websocket_uri = self.websocket_uri.format(config.port)
 
-    def close(self):
+    def close(self, * args):
         if self.websocket:
             self.websocket.close()
         self.flag = False
 
-    def connect(self):
+    def connect(self, * args):
         self.server.logger.info('正在尝试连接到机器人……')
         try:
             self.websocket = WebSocket()
             headers = {"token": self.config.token, "name": self.config.name}
-            headers = ['type: McdReforged', F'info: {encode(dumps(headers))}']
+            headers = ['type: McdReforged', F'info: {encode(headers)}']
             self.websocket.connect(self.websocket_uri, header=headers)
             self.server.logger.info('身份验证完毕，连接到机器人成功！')
             self.websocket.send('Ok')

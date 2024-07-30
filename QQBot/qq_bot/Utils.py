@@ -1,8 +1,11 @@
 import binascii
+from json import dumps, loads
 from base64 import b64encode, b64decode
 
 
-def encode(string: str):
+def encode(data: dict):
+    # 编码
+    string = dumps(data)
     string = string.encode('Utf-8')
     string = b64encode(string)
     return string.decode('Utf-8')
@@ -14,4 +17,4 @@ def decode(string: str):
         string = b64decode(string)
     except binascii.Error:
         return None
-    return string.decode('Utf-8')
+    return loads(string.decode('Utf-8'))
