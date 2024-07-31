@@ -45,7 +45,7 @@ class WebsocketListener(Websocket, Thread):
                             self.server.logger.debug(F'向机器人发送消息 {response}')
                             self.websocket.send(encode({'success': True, 'data': response}))
                             continue
-                        self.server.logger.warning(F'无法解析的消息 {data}')
+                        self.server.logger.warning(F'无法解析的消息！')
                         self.websocket.send(encode({'success': False}))
                 except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
                     self.server.logger.warning('与机器人的连接已断开！')
@@ -69,8 +69,8 @@ class WebsocketListener(Websocket, Thread):
         players = self.server.rcon_query('list')
         players = players.replace(' ', '')
         if len(players := players.split(':')) == 2:
-            return {'players': players[1].split(',') if players[1] else []}
-        return {'players': []}
+            return players[1].split(',') if players[1] else []
+        return []
 
     def server_occupation(self):
         if self.process is not None:
