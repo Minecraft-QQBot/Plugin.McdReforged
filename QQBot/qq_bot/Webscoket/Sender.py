@@ -1,5 +1,3 @@
-import time
-
 from mcdreforged.api.types import PluginServerInterface
 from websocket import WebSocketConnectionClosedException
 
@@ -10,17 +8,11 @@ from ..Utils import decode, encode
 
 class WebsocketSender(Websocket):
     def __init__(self, server: PluginServerInterface, config: Config):
-        Websocket.__init__(self, server, config, 'WebsocketKeeper')
-        self.websocket_uri = self.websocket_uri.format('bot')
-
-    def handle_loop(self):
-        time.sleep(10)
-        if self.websocket is not None:
-            self.websocket.ping()
+        Websocket.__init__(self, server, config, 'bot')
 
     def send_data(self, event_type: str, data=None, retry: bool = True):
         message_data = {'type': event_type}
-        if retry and (data is not None):
+        if data is not None:
             message_data['data'] = data
         if not self.websocket:
             if not self.connect():
@@ -29,6 +21,7 @@ class WebsocketSender(Websocket):
             self.server.logger.info('检测到链接关闭，已重新连接到机器人！')
         try:
             self.websocket.send(encode(message_data))
+            self.server.logger.debug(F'发送 {encode(message_data)} 事件成功！')
             response = decode(self.websocket.recv())
             self.server.logger.info(F'收到来自机器人的消息 {response}')
         except (WebSocketConnectionClosedException, ConnectionError):
@@ -42,13 +35,6 @@ class WebsocketSender(Websocket):
         if response.get('success'):
             return response.get('data', True)
         self.server.logger.warning(F'向 WebSocket 服务器发送 {event_type} 事件失败！请检查机器人。')
-
-    # def send_pid(self):
-    #     pid = self.server.get_server_pid_all()[-1]
-    #     if self.send_data('server_pid', {'pid': pid}):
-    #         self.server.logger.info('发送服务器信息成功！')
-    #         return None
-    #     self.server.logger.error('发送服务器信息失败！请检查配置或查看是否启动服务端，然后重试。')
 
     def send_synchronous_message(self, message: str):
         self.server.logger.info(F'向 QQ 群发送消息 {message}')

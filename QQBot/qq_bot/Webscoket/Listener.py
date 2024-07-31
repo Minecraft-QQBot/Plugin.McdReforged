@@ -1,8 +1,10 @@
 import time
 from json import JSONDecodeError
+from threading import Thread
 
 from mcdreforged.api.event import LiteralEvent
 from mcdreforged.api.types import PluginServerInterface
+from psutil import Process
 from websocket import WebSocketConnectionClosedException
 
 from .Base import Websocket
@@ -10,40 +12,45 @@ from ..Config import Config
 from ..Utils import decode, encode
 
 
-class WebsocketListener(Websocket):
-    def __init__(self, server: PluginServerInterface, config: Config):
-        Websocket.__init__(self, server, config, 'WebsocketListener')
-        self.websocket_uri = self.websocket_uri.format('minecraft')
+class WebsocketListener(Websocket, Thread):
+    flag: bool = True
+    process: Process = None
 
-    def handle_loop(self):
-        if self.connect():
-            self.server.logger.info('与机器人的连接已建立！已通知插件。')
-            self.server.dispatch_event(LiteralEvent('qq_bot.websocket_connected'), (None, None))
-            try:
-                while True:
-                    response = None
-                    data = decode(self.websocket.recv())
-                    self.server.logger.info(F'收到来自机器人的消息 {data}')
-                    event_type = data.get('type')
-                    data = data.get('data')
-                    if event_type == 'command':
-                        response = self.command(data)
-                    elif event_type == 'mcdr_command':
-                        response = self.mcdr_command(data)
-                    elif event_type == 'message':
-                        pass
-                    elif event_type == 'player_list':
-                        response = self.player_list(data)
-                    if response is not None:
-                        self.server.logger.debug(F'向机器人发送消息 {response}')
-                        self.websocket.send(encode({'success': True, 'data': response}))
-                        continue
-                    self.server.logger.warning(F'无法解析的消息 {data}')
-                    self.websocket.send(encode({'success': False}))
-            except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
-                self.server.logger.warning('与机器人的连接已断开！')
-                self.server.dispatch_event(LiteralEvent('qq_bot.websocket_closed'), (None, None))
-        time.sleep(self.config.reconnect_interval)
+    def __init__(self, server: PluginServerInterface, config: Config):
+        Thread.__init__(self, name='WebsocketListener', daemon=True)
+        Websocket.__init__(self, server, config, 'minecraft')
+
+    def run(self):
+        while self.flag:
+            if self.connect():
+                self.server.logger.info('与机器人的连接已建立！已通知插件。')
+                self.server.dispatch_event(LiteralEvent('qq_bot.websocket_connected'), (None, None))
+                self.websocket.send('Ok')
+                try:
+                    while True:
+                        response = None
+                        data = decode(self.websocket.recv())
+                        self.server.logger.info(F'收到来自机器人的消息 {data}')
+                        event_type = data.get('type')
+                        data = data.get('data')
+                        if event_type == 'command':
+                            response = self.command(data)
+                        elif event_type == 'mcdr_command':
+                            response = self.mcdr_command(data)
+                        elif event_type == 'player_list':
+                            response = self.player_list(data)
+                        elif event_type == 'server_occupation':
+                            response = self.server_occupation()
+                        if response is not None:
+                            self.server.logger.debug(F'向机器人发送消息 {response}')
+                            self.websocket.send(encode({'success': True, 'data': response}))
+                            continue
+                        self.server.logger.warning(F'无法解析的消息 {data}')
+                        self.websocket.send(encode({'success': False}))
+                except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
+                    self.server.logger.warning('与机器人的连接已断开！')
+                    self.server.dispatch_event(LiteralEvent('qq_bot.websocket_closed'), (None, None))
+            time.sleep(self.config.reconnect_interval)
 
     def command(self, command: str):
         if self.server.is_rcon_running():
@@ -64,3 +71,9 @@ class WebsocketListener(Websocket):
         if len(players := players.split(':')) == 2:
             return {'players': players[1].split(',') if players[1] else []}
         return {'players': []}
+
+    def server_occupation(self):
+        if self.process is not None:
+            cpu = self.process.cpu_percent()
+            ram = self.process.memory_percent()
+            return cpu, ram

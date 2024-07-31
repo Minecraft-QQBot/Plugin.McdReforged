@@ -1,5 +1,6 @@
 from mcdreforged.api.all import PluginServerInterface, PlayerCommandSource, CommandContext, Info
 from mcdreforged.api.command import SimpleCommandBuilder, GreedyText
+from psutil import Process
 
 from .Config import Config
 from .Webscoket import WebsocketListener, WebsocketSender
@@ -39,16 +40,21 @@ def on_unload(server: PluginServerInterface):
     server.logger.info('检测到插件卸载，已断开与机器人的连接！')
     sender.close()
     listener.close()
+    listener.flag = False
 
 
 def on_server_stop(server: PluginServerInterface, old):
     server.logger.info('检测到服务器关闭，正在通知机器人服务器……')
     sender.send_shutdown()
+    listener.process = None
 
 
 def on_server_startup(server: PluginServerInterface):
     server.logger.info('检测到服务器开启，正在连接机器人服务器……')
     sender.send_startup()
+    server_process = Process(server.get_server_pid_all()[-1])
+    server_process.cpu_percent()
+    listener.process = server_process
 
 
 def on_user_info(server: PluginServerInterface, info: Info):
