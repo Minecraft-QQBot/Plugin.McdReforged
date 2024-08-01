@@ -4,11 +4,11 @@
 
 你可以到 [Releases](https://github.com/Minecraft-QQBot/McdReforged/releases) 下载最新版本 Mcdr 服务器插件。
 
-## 特色功能
+## 功能
 
 - 可以使用 !!qq 发送 QQ 群消息。
 
-## 安装插件
+## 安装
 
 使用此插件前，你需要先安装 `Websocket-Client` 依赖。输入如下指令安装：
 
@@ -16,7 +16,11 @@
 pip3 install "websocket-client>=1.8.0"
 ```
 
-将下载好的 `QQBot.mcdr` 文拷贝到 MCDR 的 插件文件夹 下，编辑 配置文件夹 `qq_bot` 下的 `config.json` 文件。配置文件内容参考如下：
+将下载好的 `QQBot.mcdr` 文拷贝到 MCDR 的 插件文件夹 下，安装完成。
+
+## 配置
+
+编辑 配置文件夹 `qq_bot` 下的 `config.json` 文件。配置文件内容参考如下：
 
 ```json
 {
@@ -36,7 +40,9 @@ pip3 install "websocket-client>=1.8.0"
 |       token        | 字符串 |      口令，和服务器配置文件下的 TOKEN 保持一致即可。      |
 | reconnect_interval | 整数  |         重连间隔，单位为秒，通常来说不需要修改。          |
 
-当你看到类似 `身份验证完毕，连接到机器人成功！` 的 Mcdr 日志时，你的 Mcdr 服务器已经成功连接到机器人服务器。若出现错误提示，请确保你的机器人服务器已经开启，或者配置文件的
+其中 Uri 的 host 和 port 就是你的主机名和机器人配置的端口号。
+
+当你看到类似 `身份验证完毕，连接到机器人成功！` 的日志时，说明你的服务器已经成功连接到机器人服务器。若出现错误提示，请确保你的机器人服务器已经开启，或者配置文件的
 Port 是否正确。你可以通过 `server` 指令查看服务器是否连接上机器人。
 
 > [!TIP]
