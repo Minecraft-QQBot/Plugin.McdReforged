@@ -77,3 +77,4 @@ class WebsocketListener(Websocket, Thread):
             cpu = self.process.cpu_percent()
             ram = self.process.memory_percent()
             return cpu, ram
+        return False
