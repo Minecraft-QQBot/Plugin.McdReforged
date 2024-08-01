@@ -9,14 +9,17 @@ class Websocket:
     config: Config = None
     server: PluginServerInterface = None
 
+    websocket_uri: str = None
     websocket: WebSocket = None
-    websocket_uri: str = 'ws://127.0.0.1:{}/websocket/{}'
 
     def __init__(self, server: PluginServerInterface, config: Config, name: str):
         self.flag = True
         self.server = server
         self.config = config
-        self.websocket_uri = self.websocket_uri.format(config.port, name)
+        self.websocket_uri = config.uri
+        if self.websocket_uri.endswith('/'):
+            self.websocket_uri = self.websocket_uri[:-1]
+        self.websocket_uri += F'/websocket/{name}'
 
     def close(self, *args):
         if self.websocket:

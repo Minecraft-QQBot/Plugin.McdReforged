@@ -1,5 +1,6 @@
 from mcdreforged.api.types import PluginServerInterface
 from websocket import WebSocketConnectionClosedException
+from json import JSONDecodeError
 
 from .Base import Websocket
 from ..Config import Config
@@ -24,7 +25,7 @@ class WebsocketSender(Websocket):
             self.server.logger.debug(F'发送 {encode(message_data)} 事件成功！')
             response = decode(self.websocket.recv())
             self.server.logger.info(F'收到来自机器人的消息 {response}')
-        except (WebSocketConnectionClosedException, ConnectionError):
+        except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
             self.websocket = None
             self.server.logger.warning('与机器人的连接已断开！正在尝试重连')
             for _ in range(3):

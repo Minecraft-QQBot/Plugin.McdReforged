@@ -2,8 +2,7 @@ from mcdreforged.api.utils import Serializable
 
 
 class Config(Serializable):
-    # 机器人服务器的端口
-    port: int = 8000
+    uri: str = 'ws://127.0.0.1:8000/'
     # 服务器名称
     name: str = 'name'
     # 和机器人服务器的 token 一致
