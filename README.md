@@ -13,7 +13,7 @@
 使用此插件前，你需要先安装 `Websocket-Client` 依赖。输入如下指令安装：
 
 ```bash
-pip3 install "websocket-client>=1.8.0"
+pip3 install websocket-client
 ```
 
 将下载好的 `QQBot.mcdr` 文拷贝到 MCDR 的 插件文件夹 下，安装完成。
