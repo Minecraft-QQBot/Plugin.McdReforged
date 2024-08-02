@@ -54,9 +54,9 @@ class WebsocketListener(Websocket, Thread):
 
     def command(self, command: str):
         if self.server.is_rcon_running():
-            return {'response': self.server.rcon_query(command)}
+            return self.server.rcon_query(command)
         self.server.execute(command)
-        return {'response': '命令已发送，但由于 Rcon 未连接无返回值。'}
+        return '命令已发送，但由于 Rcon 未连接无返回值。'
 
     def mcdr_command(self, command: str):
         self.server.execute_command(command)
