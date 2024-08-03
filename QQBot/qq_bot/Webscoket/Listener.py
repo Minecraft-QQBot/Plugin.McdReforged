@@ -1,5 +1,5 @@
 import time
-from json import JSONDecodeError
+from json import JSONDecodeError, dumps
 from threading import Thread
 
 from mcdreforged.api.event import LiteralEvent
@@ -25,7 +25,6 @@ class WebsocketListener(Websocket, Thread):
             if self.connect():
                 self.server.logger.info('与机器人的连接已建立！已通知插件。')
                 self.server.dispatch_event(LiteralEvent('qq_bot.websocket_connected'), (None, None))
-                self.websocket.send('Ok')
                 try:
                     while True:
                         response = None
@@ -33,7 +32,10 @@ class WebsocketListener(Websocket, Thread):
                         self.server.logger.info(F'收到来自机器人的消息 {data}')
                         event_type = data.get('type')
                         data = data.get('data')
-                        if event_type == 'command':
+                        if event_type == 'message':
+                            self.server.execute(F'tellraw @a {dumps(data)}')
+                            continue
+                        elif event_type == 'command':
                             response = self.command(data)
                         elif event_type == 'mcdr_command':
                             response = self.mcdr_command(data)
