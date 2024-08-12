@@ -21,7 +21,7 @@ def on_load(server: PluginServerInterface, old):
 
     global listener, sender, config
     config = server.load_config_simple(target_class=Config)
-    server.register_help_message('qq', '发送消息到 QQ 群')
+    server.register_help_message('!!qq', '发送消息到 QQ 群')
     server.logger.info('正在注册指令……')
     command_builder = SimpleCommandBuilder()
     command_builder.command('!!qq <message>', qq)
