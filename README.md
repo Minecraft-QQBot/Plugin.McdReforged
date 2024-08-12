@@ -1,5 +1,7 @@
 # McdReforged
 
+### [**文档**](https://qqbot.bugjump.xyz/文档/安装插件/McdReforged.html)
+
 与 [BotServer](https://github.com/Minecraft-QQBot/BotServer) 进行对接的 Mcdr 插件。
 
 你可以到 [Releases](https://github.com/Minecraft-QQBot/McdReforged/releases) 下载最新版本 Mcdr 服务器插件。
