@@ -17,9 +17,9 @@ class WebsocketSender(Websocket):
             message_data['data'] = data
         if not self.websocket:
             if not self.connect():
-                self.server.logger.warning('与机器人服务器的链接已断开，无法发送数据！')
+                self.server.logger.warning('与机器人服务器的连接已断开，无法发送数据！')
                 return None
-            self.server.logger.info('检测到链接关闭，已重新连接到机器人！')
+            self.server.logger.info('检测到连接关闭，已重新连接到机器人！')
         try:
             self.websocket.send(encode(message_data))
             self.server.logger.debug(F'发送 {encode(message_data)} 事件成功！')
