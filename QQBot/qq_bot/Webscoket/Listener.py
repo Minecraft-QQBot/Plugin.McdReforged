@@ -32,17 +32,17 @@ class WebsocketListener(Websocket, Thread):
                         self.server.logger.info(F'收到来自机器人的消息 {data}')
                         event_type = data.get('type')
                         data = data.get('data')
-                        if event_type == 'message':
+                        if event_type == 'command':
+                            response = self.execute_command(data)
+                        elif event_type == 'mcdr_command':
+                            response = self.execute_mcdr_command(data)
+                        elif event_type == 'player_list':
+                            response = self.get_player_list(data)
+                        elif event_type == 'server_occupation':
+                            response = self.get_server_occupation()
+                        elif event_type == 'message':
                             self.server.execute(F'tellraw @a {dumps(data)}')
                             continue
-                        elif event_type == 'command':
-                            response = self.command(data)
-                        elif event_type == 'mcdr_command':
-                            response = self.mcdr_command(data)
-                        elif event_type == 'player_list':
-                            response = self.player_list(data)
-                        elif event_type == 'server_occupation':
-                            response = self.server_occupation()
                         if response is not None:
                             self.server.logger.debug(F'向机器人发送消息 {response}')
                             self.websocket.send(encode({'success': True, 'data': response}))
@@ -54,17 +54,17 @@ class WebsocketListener(Websocket, Thread):
                     self.server.dispatch_event(LiteralEvent('qq_bot.websocket_closed'), (None, None))
             time.sleep(self.config.reconnect_interval)
 
-    def command(self, command: str):
+    def execute_command(self, command: str):
         if self.server.is_rcon_running():
             return self.server.rcon_query(command)
         self.server.execute(command)
         return '命令已发送，但由于 Rcon 未连接无返回值。'
 
-    def mcdr_command(self, command: str):
+    def execute_mcdr_command(self, command: str):
         self.server.execute_command(command)
         return {}
 
-    def player_list(self, data: dict):
+    def get_player_list(self, data: dict):
         if not self.server.is_rcon_running():
             self.server.logger.warning('Rcon 未连接，无法获取玩家列表。')
             return None
@@ -74,7 +74,7 @@ class WebsocketListener(Websocket, Thread):
             return players[1].split(',') if players[1] else []
         return []
 
-    def server_occupation(self):
+    def get_server_occupation(self):
         if self.process is not None:
             cpu = self.process.cpu_percent()
             ram = self.process.memory_percent()
