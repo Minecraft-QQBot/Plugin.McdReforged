@@ -27,15 +27,15 @@
 > [!WARNING]
 > 本项目采用 GPL3 许可证，请勿商用！如若修改请务必开源并且注明出处。
 
-与 [BotServer](https://github.com/Minecraft-QQBot/BotServer) 进行对接的 Mcdr 插件。
-
-你可以到 [Releases](https://github.com/Minecraft-QQBot/McdReforged/releases) 下载最新版本 Mcdr 服务器插件。
+本项目为与 [BotServer](https://github.com/Minecraft-QQBot/BotServer) 机器人进行对接的 MCDR 插件。
 
 ## 特色功能
 
 - 可以使用 !!qq 发送 QQ 群消息。
 
 ## 插件安装
+
+你可以到 [Releases](https://github.com/Minecraft-QQBot/Plugin.McdReforged/releases) 下载最新版本 MCDR 服务器插件。
 
 使用此插件前，你需要先安装 `Websocket-Client` 依赖。输入如下指令安装：
 
