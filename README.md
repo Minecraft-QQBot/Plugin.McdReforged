@@ -33,6 +33,9 @@
 
 - 可以使用 !!qq 发送 QQ 群消息。
 
+> [!TIP]
+> 请注意，本插件的玩家列表依赖于原版的 List 指令获取。如果你的 List 指令输出由于模组被篡改，请自行尝试修改代码解决，或是提交 Issues 向作者反馈，但我们并不保证接纳所有的 List 格式。
+
 ## 插件安装
 
 你可以到 [Releases](https://github.com/Minecraft-QQBot/Plugin.McdReforged/releases) 下载最新版本 MCDR 服务器插件。

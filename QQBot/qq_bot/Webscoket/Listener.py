@@ -70,8 +70,11 @@ class WebsocketListener(Websocket, Thread):
             return None
         players = self.server.rcon_query('list')
         players = players.replace(' ', '')
-        if len(players := players.split(':')) == 2:
-            return players[1].split(',') if players[1] else []
+        if players.startswith('There are'):
+            if len(players := players.split(': ')) == 2:
+                return players[1].split(',') if players[1] else []
+            return []
+        self.server.logger.warning('检测到 List 指令返回值异常，无法获取玩家列表！')
         return []
 
     def get_server_occupation(self):

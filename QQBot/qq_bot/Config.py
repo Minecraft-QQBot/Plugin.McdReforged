@@ -9,5 +9,6 @@ class Config(Serializable):
     token: str = 'YourToken'
     # 尝试重连间隔(s)
     reconnect_interval: int = 5
+
     # 无需管，同 .env 里的 SYNC_ALL_GAME_MESSAGE
     flag: bool = False
