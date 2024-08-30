@@ -70,7 +70,7 @@ class WebsocketListener(Websocket, Thread):
             return None
         players = self.server.rcon_query('list')
         players = players.replace(' ', '')
-        if players.startswith('There are'):
+        if players.startswith('Thereare'):
             if len(players := players.split(': ')) == 2:
                 return players[1].split(',') if players[1] else []
             return []
