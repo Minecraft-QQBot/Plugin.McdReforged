@@ -30,8 +30,8 @@ class WebsocketSender:
             self.connection = await websockets.connect(self.uri, additional_headers=headers)
             self.server.logger.info('[Sender] 已连接到机器人服务器！')
             return True
-        except InvalidStatus as error:
-            self.server.logger.warning(f'[Sender] 无法连接到机器人服务器！错误信息：{error}')
+        except InvalidStatus:
+            self.server.logger.warning(f'[Sender] 服务器拒绝请求！可能是因为口令不正确，请确保正确填写。')
         except (ConnectionRefusedError, ConnectionError):
             self.server.logger.warning('[Sender] 无法连接到机器人服务器！')
             return False
