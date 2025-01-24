@@ -1,2 +1,1 @@
-from .Listener import WebsocketListener
-from .Sender import WebsocketSender
+from .Manager import WebsocketManager

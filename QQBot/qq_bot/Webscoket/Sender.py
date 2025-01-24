@@ -1,75 +1,98 @@
-from mcdreforged.api.types import PluginServerInterface
-from websocket import WebSocketConnectionClosedException
+import asyncio
 from json import JSONDecodeError
 
-from .Base import Websocket
+import websockets
+from websockets.exceptions import ConnectionClosed, InvalidStatus
+from websockets.asyncio.client import ClientConnection
+from mcdreforged.api.types import PluginServerInterface
+
 from ..Config import Config
 from ..Utils import decode, encode
 
 
-class WebsocketSender(Websocket):
-    def __init__(self, server: PluginServerInterface, config: Config):
-        Websocket.__init__(self, server, config, 'bot')
+class WebsocketSender:
+    connection: ClientConnection = None
 
-    def send_data(self, event_type: str, data=None, wait_response: bool = True):
+    def __init__(self, server: PluginServerInterface, config: Config):
+        self.server = server
+        self.config = config
+        self.uri = config.uri
+        if self.uri.endswith('/'):
+            self.uri = self.uri[:-1]
+        self.uri += '/websocket/bot'
+
+    async def connect(self):
+        if self.connection:
+            return True
+        headers = encode({'token': self.config.token, 'name': self.config.name})
+        headers = {'type': 'McdReforged', 'info': headers}
+        try:
+            self.connection = await websockets.connect(self.uri, additional_headers=headers)
+            self.server.logger.info('[Sender] 已连接到机器人服务器！')
+            return True
+        except InvalidStatus as error:
+            self.server.logger.warning(f'[Sender] 无法连接到机器人服务器！错误信息：{error}')
+        except (ConnectionRefusedError, ConnectionError):
+            self.server.logger.warning('[Sender] 无法连接到机器人服务器！')
+            return False
+
+    async def send_data(self, event_type: str, data=None, wait_response: bool = True):
         message_data = {'type': event_type}
         if data is not None:
             message_data['data'] = data
-        if not self.websocket:
-            if not self.connect():
-                self.server.logger.warning('与机器人服务器的连接已断开，无法发送数据！')
+        if self.connection is None:
+            if not await self.connect():
                 return None
-            self.server.logger.info('检测到连接关闭，已重新连接到机器人！')
         try:
-            self.websocket.send(encode(message_data))
-            self.server.logger.debug(F'发送 {message_data} 事件成功！')
+            await self.connection.send(encode(message_data))
+            self.server.logger.debug(f'[Sender] 发送 {message_data} 事件成功！')
             if not wait_response:
                 return True
             self.server.logger.debug('等待来自机器人的回应……')
-            response = decode(self.websocket.recv())
-            self.server.logger.info(F'收到来自机器人的消息 {response}')
-        except (WebSocketConnectionClosedException, JSONDecodeError, ConnectionError):
-            self.websocket = None
-            self.server.logger.warning('与机器人的连接已断开！正在尝试重连')
-            for _ in range(3):
-                if self.connect():
-                    return self.send_data(event_type, data)
+            response = decode(await self.connection.recv())
+            self.server.logger.info(f'[Sender] 收到来自机器人的消息 {response}')
+            if response.get('success'):
+                return response.get('data', True)
+            self.server.logger.warning(f'[Sender] 向服务器发送 {event_type} 事件失败！请检查机器人。')
             return None
-        self.server.logger.debug(F'来自机器人的回应 {response}！')
-        if response.get('success'):
-            return response.get('data', True)
-        self.server.logger.warning(F'向 WebSocket 服务器发送 {event_type} 事件失败！请检查机器人。')
-
-    def send_player_chat(self, player: str, message: str):
-        self.send_data('player_chat', (player, message), wait_response=False)
-
-    def send_synchronous_message(self, message: str):
-        self.server.logger.info(F'向 QQ 群发送消息 {message}')
-        return self.send_data('message', message)
-
-    def send_startup(self):
-        if response := self.send_data('server_startup'):
-            self.server.logger.info('发送服务器启动消息成功！')
-            self.config.flag = response
-            self.server.logger.info(F'保存同步的配置 {self.config}')
-            self.server.save_config_simple(self.config)
+        except JSONDecodeError:
+            self.server.logger.warning(f'[Sender] 向服务器发送 {event_type} 事件失败！服务器返回了非法的 JSON 数据。')
             return None
-        self.server.logger.error('发送服务器启动消息失败！请检查配置或查看是否启动服务端，然后重试。')
-
-    def send_shutdown(self):
-        if self.send_data('server_shutdown'):
-            self.server.logger.info('发送服务器关闭消息成功！')
+        except ConnectionClosed:
+            self.connection = None
+            self.server.logger.warning(f'[Sender] 与机器人的连接已断开！正在尝试重连。')
+            if await self.connect():
+                return await self.send_data(event_type, data)
             return None
-        self.server.logger.error('发送服务器关闭消息失败！请检查配置或查看是否启动服务端，然后重试。')
 
-    def send_player_left(self, player: str):
-        if self.send_data('player_left', player):
-            self.server.logger.info(F'发送玩家 {player} 离开消息成功！')
-            return None
-        self.server.logger.error(F'发送玩家 {player} 离开消息失败！请检查配置或查看是否启动服务端，然后重试。')
+    async def send_player_chat(self, player: str, message: str):
+        self.server.logger.info(f'[Sender] 发送玩家 {player} 的聊天消息: {message}')
+        return await self.send_data('player_chat', (player, message), wait_response=False)
 
-    def send_player_joined(self, player: str):
-        if self.send_data('player_joined', player):
-            self.server.logger.info(F'发送玩家 {player} 加入消息成功！')
+    async def send_synchronous_message(self, message: str):
+        self.server.logger.info(f'[Sender] 向 QQ 群发送消息 {message}')
+        return await self.send_data('message', message)
+
+    async def send_startup(self):
+        if response := await self.send_data('server_startup'):
+            self.server.logger.info('[Sender] 发送服务器启动消息成功！')
             return None
-        self.server.logger.error(F'发送玩家 {player} 加入消息失败！请检查配置或查看是否启动服务端，然后重试。')
+        self.server.logger.error('[Sender] 发送服务器启动消息失败！请检查配置或查看是否启动服务端，然后重试。')
+
+    async def send_shutdown(self):
+        if await self.send_data('server_shutdown'):
+            self.server.logger.info('[Sender] 发送服务器关闭消息成功！')
+            return None
+        self.server.logger.error('[Sender] 发送服务器关闭消息失败！请检查配置或查看是否启动服务端，然后重试。')
+
+    async def send_player_left(self, player: str):
+        if await self.send_data('player_left', player):
+            self.server.logger.info(f'[Sender] 发送玩家 {player} 离开消息成功！')
+            return None
+        self.server.logger.error(f'[Sender] 发送玩家 {player} 离开消息失败！请检查配置或查看是否启动服务端，然后重试。')
+
+    async def send_player_joined(self, player: str):
+        if await self.send_data('player_joined', player):
+            self.server.logger.info(f'[Sender] 发送玩家 {player} 加入消息成功！')
+            return None
+        self.server.logger.error(f'[Sender] 发送玩家 {player} 加入消息失败！请检查配置或查看是否启动服务端，然后重试。')
