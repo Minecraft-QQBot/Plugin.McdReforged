@@ -40,10 +40,10 @@
 
 你可以到 [Releases](https://github.com/Minecraft-QQBot/Plugin.McdReforged/releases) 下载最新版本 MCDR 服务器插件。
 
-使用此插件前，你需要先安装 `Websocket-Client` 依赖。输入如下指令安装：
+使用此插件前，你需要先安装 `Websockets` 依赖。输入如下指令安装：
 
 ```bash
-pip3 install websocket-client
+pip3 install websockets
 ```
 
 将下载好的 `QQBot.mcdr` 文拷贝到 MCDR 的 插件文件夹 下，安装完成。

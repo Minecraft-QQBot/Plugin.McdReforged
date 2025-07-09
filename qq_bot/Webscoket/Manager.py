@@ -1,5 +1,6 @@
 import asyncio
 from asyncio import AbstractEventLoop, Task
+from typing import Optional
 from threading import Thread
 
 from mcdreforged.api.types import PluginServerInterface
@@ -10,8 +11,8 @@ from .Listener import WebsocketListener
 
 
 class WebsocketManager(Thread):
-    task: Task = None
-    event_loop: AbstractEventLoop = None
+    task: Optional[Task] = None
+    event_loop: Optional[AbstractEventLoop] = None
 
     def __init__(self, server: PluginServerInterface, config: Config):
         Thread.__init__(self, name='WebsocketManager', daemon=True)
@@ -26,14 +27,18 @@ class WebsocketManager(Thread):
         self.event_loop.run_forever()
 
     def run_coroutine(self, coroutine):
+        if self.event_loop is None:
+            raise RuntimeError('插件初始化失败！未找到事件循环。')
         future = asyncio.run_coroutine_threadsafe(coroutine, self.event_loop)
-        return future.result()
+        try:
+            return future.result(timeout=20)
+        except asyncio.TimeoutError:
+            return None
 
     def close_connection(self):
-        self.task.cancel()
+        if not (self.task and self.event_loop):
+            return None
         if self.sender.connection is not None:
             self.run_coroutine(self.sender.connection.close())
-            self.event_loop.stop()
-            return None
         self.event_loop.stop()
-        
+    

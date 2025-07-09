@@ -1,5 +1,6 @@
 import asyncio
-from json import JSONDecodeError, dumps
+from json import dumps
+from typing import Optional
 
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -12,7 +13,7 @@ from ..Utils import decode, encode
 
 
 class WebsocketListener:
-    process: Process = None
+    process: Optional[Process] = None
 
     def __init__(self, server: PluginServerInterface, config: Config):
         self.server = server
@@ -46,18 +47,18 @@ class WebsocketListener:
         self.server.logger.debug(f'[Listener] 收到来自机器人的消息 {data}')
         
         event_type = data.get('type')
-        data = data.get('data')
+        event_data = data.get('data')
         
         if event_type == 'command':
-            response = self.execute_command(data)
+            response = self.execute_command(event_data)
         elif event_type == 'mcdr_command':
-            response = self.execute_mcdr_command(data)
+            response = self.execute_mcdr_command(event_data)
         elif event_type == 'player_list':
-            response = self.get_player_list(data)
+            response = self.get_player_list(event_data)
         elif event_type == 'server_occupation':
             response = self.get_server_occupation()
         elif event_type == 'message':
-            self.server.execute(f'tellraw @a {dumps(data)}')
+            self.server.execute(f'tellraw @a {dumps(event_data)}')
             return None
             
         if response is not None:
