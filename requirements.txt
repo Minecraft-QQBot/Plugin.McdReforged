@@ -1,0 +1,2 @@
+websockets^=15.0.0
+mcdreforged^=2.14.7
